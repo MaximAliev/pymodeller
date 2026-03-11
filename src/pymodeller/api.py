@@ -16,13 +16,13 @@ from sklearn.exceptions import NotFittedError
 from loguru import logger
 from sklearn.base import BaseEstimator
 
-from src.modelseek._automl import H2O, AML, AutoGluon
-from src.modelseek.domain import Dataset, Task
-from src.modelseek.repository import DatasetRepository, ImbalancedDatasetRepository, OpenMLDatasetRepository
-from src.modelseek._helpers import infer_positive_target_class, train_test_split
+from src.pymodeller._automl import H2O, AML, AutoGluon
+from src.pymodeller.domain import Dataset, Task
+from src.pymodeller.repository import DatasetRepository, ImbalancedDatasetRepository, OpenMLDatasetRepository
+from src.pymodeller._helpers import infer_positive_target_class, train_test_split
 
 
-class ModelSeek:
+class Modeller:
     """
     User interface for performing automated modelling.
 

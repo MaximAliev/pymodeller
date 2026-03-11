@@ -18,7 +18,7 @@ from loguru import logger
 import jdk
 import os
 
-from src.modelseek.domain import Dataset, Task
+from src.pymodeller.domain import Dataset, Task
 
 
 class AML(ABC):

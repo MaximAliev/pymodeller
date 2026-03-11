@@ -8,11 +8,11 @@ from imblearn.datasets import fetch_datasets
 from loguru import logger
 import itertools
 
-from src.modelseek.domain import Dataset
+from src.pymodeller.domain import Dataset
 
 
 class DatasetRepository(ABC):
-    def __init__(self, verbosity=1):
+    def __init__(self, verbosity=2):
         self._datasets: List[Dataset] = []
         self._verbosity: int
         
@@ -31,14 +31,17 @@ class DatasetRepository(ABC):
         self._verbosity = verbosity
 
     @abstractmethod
-    def load_datasets(self, ids: Optional[Union[List[int], range]] = None, x_and_y = False) -> List[Dataset]:
+    def load_datasets(self, ids: Optional[Union[List[int], range]] = None, split_features_and_target = False) -> List[Dataset]:
         raise NotImplementedError()
 
     @abstractmethod
-    def load_dataset(self, id: int, x_and_y = False) -> Dataset:
+    def load_dataset(self, id: int, split_features_and_target = False) -> Dataset:
         raise NotImplementedError()
 
 class ImbalancedDatasetRepository(DatasetRepository):
+    """
+    Repository of tabular datasets with imbalanced binary targets.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -46,13 +49,13 @@ class ImbalancedDatasetRepository(DatasetRepository):
         self._raw_datasets = fetch_datasets(data_home='datasets/imbalanced', verbose=True if self._verbosity > 1 else False)
 
     @logger.catch
-    def load_dataset(self, id: int, x_and_y = False) -> Dataset:
+    def load_dataset(self, id: int, split_features_and_target = False) -> Dataset:
         for i, (dataset_name, dataset_data) in enumerate(self._raw_datasets.items(), 1):
             if i == id:
                 x = dataset_data.get("data")
                 y = dataset_data.get("target")[:, np.newaxis]
 
-                if not x_and_y:
+                if not split_features_and_target:
                     x = pd.DataFrame(np.concatenate((x, y), axis=1))
                     y = None
                 else:
@@ -72,7 +75,7 @@ class ImbalancedDatasetRepository(DatasetRepository):
             raise ValueError(f"Loading of Dataset(id={id}) failed.")
 
     @logger.catch
-    def load_datasets(self, ids: Optional[Union[List[int], range]] = None, x_and_y = False) -> List[Dataset]:
+    def load_datasets(self, ids: Optional[Union[List[int], range]] = None, split_features_and_target = False) -> List[Dataset]:
         if ids is None:
             range_start = 1
             range_end = len(self._raw_datasets.keys()) + 1
@@ -80,7 +83,7 @@ class ImbalancedDatasetRepository(DatasetRepository):
         
         logger.debug(f"Chosen dataset identifiers: {ids}.")
         for id in ids:
-            dataset = self.load_dataset(id, x_and_y)
+            dataset = self.load_dataset(id, split_features_and_target)
             if dataset is not None:
                 self._datasets.append(dataset)
         
@@ -101,13 +104,15 @@ class OpenMLDatasetRepository(DatasetRepository):
     def __init__(self, id: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._suite_id = id
+        
         openml.config.set_root_cache_directory("datasets/openml")
         openml.config.set_console_log_level(self._verbosity)
 
     @logger.catch
-    def load_dataset(self, id: int, x_and_y = False) -> Dataset:
+    def load_dataset(self, id: int, split_features_and_target = False) -> Dataset:
         """
         Fetch task from openml.org or load it from local cache.
+        Then convert it to appropriate format.
         
         Parameters
         ----------
@@ -128,12 +133,12 @@ class OpenMLDatasetRepository(DatasetRepository):
 
         x = cast(pd.DataFrame, x)
         x = x.to_numpy()
-        
+
         y = cast(pd.DataFrame, y)
         y = y.to_numpy()
         y = y[:, np.newaxis]
 
-        if not x_and_y:
+        if not split_features_and_target:
             x = pd.DataFrame(np.concatenate((x,y) , axis=1))
             y = None
         else:
@@ -149,9 +154,9 @@ class OpenMLDatasetRepository(DatasetRepository):
 
     # TODO: parallelize.
     @logger.catch
-    def load_datasets(self, ids: Optional[Union[List[int], range]] = None, x_and_y = False) -> List[Dataset]:
+    def load_datasets(self, ids: Optional[Union[List[int], range]] = None, split_features_and_target = False) -> List[Dataset]:
         """
-        Fetch tasks from openml.org or load them from local cache.
+        Fetch benchmark suite from openml.org.
         
         Parameters
         ----------
@@ -172,7 +177,7 @@ class OpenMLDatasetRepository(DatasetRepository):
             if ids is not None and id not in ids:
                 raise ValueError(f"Task id={id} is out of range for chosen corpus.")
 
-            dataset = self.load_dataset(id, x_and_y)
+            dataset = self.load_dataset(id, split_features_and_target)
             if dataset is not None: 
                 self._datasets.append(dataset)
         
