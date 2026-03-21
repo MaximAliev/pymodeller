@@ -1,5 +1,6 @@
 import itertools
 import logging
+import os
 import pprint
 import sys
 import time
@@ -16,10 +17,10 @@ from sklearn.exceptions import NotFittedError
 from loguru import logger
 from sklearn.base import BaseEstimator
 
-from src.pymodeller._automl import H2O, AML, AutoGluon
-from src.pymodeller.domain import Dataset, Task
-from src.pymodeller.repository import DatasetRepository, ImbalancedDatasetRepository, OpenMLDatasetRepository
-from src.pymodeller._helpers import infer_positive_target_class, train_test_split
+from src.modelbest._automl import H2O, AML, AutoGluon
+from src.modelbest.domain import Dataset, Task
+from src.modelbest.repository import DatasetRepository, ImbalancedDatasetRepository, OpenMLDatasetRepository
+from src.modelbest._helpers import infer_positive_target_class, train_test_split
 
 
 class Modeller:
@@ -71,7 +72,7 @@ class Modeller:
         self._verbosity: int
         # TODO: create a common class for fitted models.
         self._fitted_model = None
-        self._test_metrics: Set[str] = set()
+        self._test_metrics: List[str] = []
 
         self.verbosity = verbosity
         self.aml = (backend, kwargs)
@@ -164,6 +165,7 @@ class Modeller:
             logger.debug(f"Test metrics are {self.test_metrics}")
             
             self.aml.score(self.test_metrics, y_test, y_predicted, pos_class_label)
+
         finally:
             if self.aml == 'H2O':
                 import h2o
@@ -251,14 +253,15 @@ class Modeller:
             self._verbosity = value
 
     @property
-    def test_metrics(self) -> Set[str]:
+    def test_metrics(self) -> List[str]:
         return self._test_metrics
 
     @test_metrics.setter
     def test_metrics(self, metrics: Optional[List[str]]):
-        self.test_metrics.add(self.validation_metric)
+        self.test_metrics.insert(0, self.validation_metric)
         
         if metrics is not None:
+            test_metrics = set()
             for metric in metrics:
                 if metric not in [
                     'f1',
@@ -287,4 +290,5 @@ class Modeller:
                             'mcc',
                             'accuracy'].
                         """)
-                self.test_metrics.add(metric)
+                test_metrics.add(metric)
+            self.test_metrics.extend(test_metrics)    

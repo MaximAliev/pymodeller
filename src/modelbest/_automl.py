@@ -11,14 +11,14 @@ from h2o.automl import H2OAutoML
 import numpy as np
 import pandas as pd
 from sklearn.exceptions import NotFittedError
-from sklearn.metrics import fbeta_score, balanced_accuracy_score, matthews_corrcoef, recall_score, precision_score, average_precision_score, roc_auc_score, accuracy_score
+from sklearn.metrics import confusion_matrix, fbeta_score, balanced_accuracy_score, matthews_corrcoef, recall_score, precision_score, average_precision_score, roc_auc_score, accuracy_score
 from autogluon.tabular import TabularDataset as AutoGluonTabularDataset, TabularPredictor as AutoGluonTabularPredictor
 from autogluon.core.metrics import make_scorer
 from loguru import logger
 import jdk
 import os
 
-from src.pymodeller.domain import Dataset, Task
+from src.modelbest.domain import Dataset, Task
 
 
 class AML(ABC):
