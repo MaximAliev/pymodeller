@@ -1,4 +1,7 @@
 # ModelBest
+
+![PyPI - Downloads](https://img.shields.io/pypi/d/modelbest?color=blue)
+
 ModelBest is a tool, that automates modelling on your (or benchmark) data, acting as a convinient wrapper to the state-of-the-art automated machine learning (AutoML) libraries. 
 
 It can be utilized by ML engineers, as well as the common users, to test different modelling scenarios.
